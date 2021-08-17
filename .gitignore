@@ -1,0 +1,8 @@
+.idea/
+__pycache__/
+
+config.json
+cookie.txt
+config_test.py
+*.conf
+!template.conf

@@ -7,10 +7,6 @@ import http.cookiejar
 
 from config import *
 
-# TODO: move to config
-device_id = "098f6bcd4621d373cade4e832627b4f6"
-device_name = "testlinux"
-
 user_agent = "CorpLink/2.0.5 (linux; Linux Test Linux; en)"
 
 url_postfix = "?os=Linux&os_version=Test+Linux"

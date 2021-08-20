@@ -32,12 +32,17 @@ config.json
 ```json
 {
   "username": "your_name",
+  "device_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "device_name": "device_name",
   "public_key": "your_public_key",
   "private_key": "your_private_key",
   "server": "test.com:10443",
   "conf_file": "corplink.conf"
 }
 ```
+
+> 其中， `username`, `public_key`, `private_key`, `server` 是必填
+> `device_name` 为设备名，默认为 `linux` ，会在 app 上展示， `device_id` 为 32 位，默认为 `md5sum(device_name)`
 
 运行脚本，登录，验证，就会生成 wg 的配置文件  
 然后复制到 `/etc/wireguard/` 下然后 `systemctl start wg-quic@corplink.service` 即可

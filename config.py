@@ -7,6 +7,8 @@ STAT_LOGIN = 1
 STAT_VERIFY = 2
 STAT_READY = 3
 
+default_device_name = "linux"
+
 
 class ConfManager:
     def __init__(self, path, auto_dump=True):

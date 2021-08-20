@@ -1,6 +1,7 @@
 import os
 import time
 
+import utils
 from config import *
 from request import Client
 
@@ -11,9 +12,18 @@ class CorpLink:
         self._conf_file = "corplink.conf"
         try:
             self._username = self._conf["username"]
+            self._username = self._conf["username"]
             self._public_key = self._conf["public_key"]
             self._private_key = self._conf["private_key"]
             self._client = Client(self._conf["server"], conf_path)
+
+            self._device_name = default_device_name
+            if "device_name" in self._conf:
+                self._device_name = self._conf["device_name"]
+            self._device_id = utils.device_id_from_name(self._device_name)
+            if "device_id" in self._conf:
+                self._device_id = self._conf["device_id"]
+
             if "conf_file" in self._conf:
                 self._conf_file = self._conf["conf_file"]
         except KeyError as e:

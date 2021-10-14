@@ -40,12 +40,12 @@ def build_cookie(domain, name, value) -> http.cookiejar.Cookie:
 
 
 class Client:
-    def __init__(self, server: str, conf_path="."):
+    def __init__(self, server: str, device_id, device_name, conf_path="."):
         self._cookiejar = None
         self._server = server
         self._domain = server.split(":")[0]
-        self._api_opener = self._build_opener(os.path.join(conf_path, "cookie.txt"), True)
-        self._vpn_opener = self._build_opener(os.path.join(conf_path, "cookie.txt"))
+        self._api_opener = self._build_opener(os.path.join(conf_path, "cookie.txt"), device_id, device_name, True)
+        self._vpn_opener = self._build_opener(os.path.join(conf_path, "cookie.txt"), device_id, device_name)
 
     def _ok(self, resp) -> bool:
         return resp["code"] == 0
@@ -56,7 +56,8 @@ class Client:
         ctx.verify_mode = ssl.CERT_NONE
         return ctx
 
-    def _build_opener(self, cookie_path, load_csrf_token=False) -> urllib.request.OpenerDirector:
+    def _build_opener(self, cookie_path, device_id, device_name,
+                      load_csrf_token=False) -> urllib.request.OpenerDirector:
         if self._cookiejar is None:
             self._cookiejar = http.cookiejar.MozillaCookieJar(cookie_path)
             try:
@@ -101,7 +102,7 @@ class Client:
     def get_login_method(self, username):
         data = {
             "forget_password": False,
-            "platform": "ldap",
+            "platform": "",
             "user_name": username
         }
         resp = self._open(get_login_method_url, data)
@@ -111,7 +112,7 @@ class Client:
         data = {
             "code_type": "email",
             "forget_password": False,
-            "platform": "ldap",
+            "platform": "",
             "user_name": username
         }
         resp = self._open(send_code_url, data)
@@ -213,8 +214,13 @@ class Client:
         data = {"public_key": your_key}
         resp = self._open(conn_url % (ip, port), data)
         if not self._ok(resp):
-            print(f"failed to get vpn info: {resp}")
-            return {}
+            resp = json.loads(resp)
+            if resp["code"] == 3002:
+                print(resp["message"])
+                return {"2-fa": None}
+            else:
+                print(f"failed to get vpn info: {resp}")
+                return {}
         return resp["data"]
 
     def report_vpn_status(self, ip, port, wg_ip, public_key):

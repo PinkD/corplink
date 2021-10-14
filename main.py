@@ -15,7 +15,6 @@ class CorpLink:
             self._username = self._conf["username"]
             self._public_key = self._conf["public_key"]
             self._private_key = self._conf["private_key"]
-            self._client = Client(self._conf["server"], conf_path)
 
             self._device_name = default_device_name
             if "device_name" in self._conf:
@@ -23,6 +22,8 @@ class CorpLink:
             self._device_id = utils.device_id_from_name(self._device_name)
             if "device_id" in self._conf:
                 self._device_id = self._conf["device_id"]
+
+            self._client = Client(self._conf["server"], self._device_id, self._device_name, conf_path)
 
             if "conf_file" in self._conf:
                 self._conf_file = self._conf["conf_file"]
@@ -80,6 +81,10 @@ class CorpLink:
         info = self._client.fetch_peer_info(ip, port, public_key)
         if len(info) == 0:
             return
+        if "2-fa" in info:
+            # need to verify 2-fa
+            self._conf["state"] = STAT_LOGIN
+
         self.state = STAT_READY
         conf = WireguardConfig(
             ip=f'{info["ip"]}/{info["ip_mask"]}',
@@ -105,6 +110,8 @@ class CorpLink:
 if __name__ == '__main__':
     corp_link = CorpLink()
     if corp_link.need_login():
+        # TODO: generate private and public key
+        #       because if other client terminates this session, the public key will be invalid
         if not corp_link.login():
             exit(1)
 

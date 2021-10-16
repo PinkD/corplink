@@ -116,7 +116,9 @@ class Client:
             "user_name": username
         }
         resp = self._open(send_code_url, data)
-        # print(resp)
+        if not self._ok(resp):
+            print(f"Failed to request email code: {resp}")
+            return False
         print("code has been sent to your email")
 
     def login(self, code) -> bool:

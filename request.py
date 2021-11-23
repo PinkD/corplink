@@ -216,7 +216,6 @@ class Client:
         data = {"public_key": your_key}
         resp = self._open(conn_url % (ip, port), data)
         if not self._ok(resp):
-            resp = json.loads(resp)
             if resp["code"] == 3002:
                 print(resp["message"])
                 return {"2-fa": None}

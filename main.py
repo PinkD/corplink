@@ -86,6 +86,7 @@ class CorpLink:
         if "2-fa" in info:
             # need to verify 2-fa
             self._conf["state"] = STAT_LOGIN
+            return
 
         self.state = STAT_READY
         conf = WireguardConfig(

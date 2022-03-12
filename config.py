@@ -26,7 +26,7 @@ class ConfManager:
 
     def dump_conf(self):
         with open(self._conf_path, "w") as f:
-            f.write(json.dumps(self._conf))
+            f.write(json.dumps(self._conf, indent=4))
 
     def __contains__(self, k):
         return k in self._conf

@@ -1,6 +1,8 @@
 import os
 import time
 
+import pyotp
+
 import utils
 from config import *
 from request import Client
@@ -12,9 +14,12 @@ class CorpLink:
         self._conf_file = "corplink.conf"
         try:
             self._username = self._conf["username"]
-            self._username = self._conf["username"]
+            self._password = self._conf["password"]
             self._public_key = self._conf["public_key"]
             self._private_key = self._conf["private_key"]
+
+            if "totp" in self._conf:
+                self._otp = pyotp.TOTP(self._conf["totp"])
 
             self._device_name = default_device_name
             if "device_name" in self._conf:
@@ -46,18 +51,29 @@ class CorpLink:
         return self.state == STAT_LOGIN
 
     def login(self) -> bool:
-        self._client.get_login_method(self._username)
-        self._client.request_email_verify_code(self._username)
-        code = input("code from your email:")
-        ok = self._client.login(code)
-        if ok:
-            print(f"login as {self._username} success")
+        auth = self._client.get_login_method(self._username)
+        if len(auth) == 0:
+            print("No available auth")
+            return False
+        if "password" in auth:
+            if len(self._password) != 0:
+                self._otp = self._client.login_with_password(self._username, self._password)
+                self.state = STAT_LOGIN
+                self._conf["totp"] = self._otp.secret
+                return True
+            else:
+                print("No password provided, try to use another method")
+        if "email" in auth:
+            self._client.request_email_verify_code(self._username)
+            code = input("code from your email:")
+            self._otp = self._client.login_with_code(code)
+            self._conf["totp"] = self._otp.secret
             self.state = STAT_LOGIN
-        return ok
+            return True
+        return False
 
     def verify(self) -> bool:
-        code = input("code from your app:")
-        ok = self._client.verify(code)
+        ok = self._client.verify(self._otp.now())
         if ok:
             print("2 fa verify success")
             self.state = STAT_VERIFY

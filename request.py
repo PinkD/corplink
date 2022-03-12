@@ -1,19 +1,23 @@
 import copy
+import hashlib
 import os
 import ssl
 import time
 import urllib.request
 import http.cookiejar
 
+import pyotp
+
 from config import *
 
-user_agent = "CorpLink/2.0.5 (linux; Linux Test Linux; en)"
+user_agent = "CorpLink/20500 (Google Pixel; Android 10; en)"
 
-url_postfix = "?os=Linux&os_version=Test+Linux"
+url_postfix = "?os=Android&os_version=24&model=GooglePixel&app_version=2.0.5"
 
 get_login_method_url = f"https://%s/api/lookup{url_postfix}"
 send_code_url = f"https://%s/api/login/code/send{url_postfix}"
 verify_url = f"https://%s/api/login/code/verify{url_postfix}"
+login_url = f"https://%s/api/login{url_postfix}"
 list_vpn_url = f"https://%s/api/vpn/list{url_postfix}"
 fa2_url = f"https://%s/api/mfa/code/verify{url_postfix}"
 
@@ -99,14 +103,16 @@ class Client:
             resp = self._vpn_opener.open(req).read()
             return json.loads(resp)
 
-    def get_login_method(self, username):
+    def get_login_method(self, username) -> [str]:
         data = {
             "forget_password": False,
             "platform": "",
             "user_name": username
         }
         resp = self._open(get_login_method_url, data)
-        print(resp)
+        if not self._ok(resp):
+            return []
+        return resp["data"]["auth"]
 
     def request_email_verify_code(self, username):
         data = {
@@ -121,21 +127,38 @@ class Client:
             return False
         print("code has been sent to your email")
 
-    def login(self, code) -> bool:
+    def _login_internal(self, url, data) -> typing.Optional[pyotp.TOTP]:
+        resp = self._open(url, data)
+        if not self._ok(resp):
+            print(f"Failed to login: {resp}")
+            return None
+        csrf_token = self._find_in_cookie("csrf-token")
+        if len(csrf_token) != 0:
+            self._api_opener.addheaders.append(("Csrf-Token", csrf_token))
+        url = resp["data"]["url"]
+        otp = pyotp.parse_uri(url)
+        if isinstance(otp, pyotp.TOTP):
+            return otp
+        class_name = otp.__class__.__name__
+        print(f"{class_name} not support yet")
+        return None
+
+    def login_with_code(self, code) -> typing.Optional[pyotp.TOTP]:
         data = {
             "code": code,
             "code_type": "email",
             "forget_password": False,
         }
-        resp = self._open(verify_url, data)
-        if not self._ok(resp):
-            print(f"Failed to login: {resp}")
-            return False
-        csrf_token = self._find_in_cookie("csrf-token")
-        if len(csrf_token) != 0:
-            self._api_opener.addheaders.append(("Csrf-Token", csrf_token))
+        return self._login_internal(verify_url, data)
 
-        return True
+    def login_with_password(self, username: str, password: str) -> typing.Optional[pyotp.TOTP]:
+        sh = hashlib.sha256(password.encode())
+        data = {
+            "user_name": username,
+            "password": sh.hexdigest(),
+            "forget_password": False,
+        }
+        return self._login_internal(login_url, data)
 
     def verify(self, code) -> bool:
         data = {
@@ -145,7 +168,7 @@ class Client:
         }
         resp = self._open(fa2_url, data)
         if not self._ok(resp):
-            print(f"Failed to login: {resp}")
+            print(f"Failed to verify 2fa: {resp}")
             return False
         return True
 

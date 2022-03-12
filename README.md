@@ -32,6 +32,7 @@ config.json
 ```json
 {
   "username": "your_name",
+  "password": "your_password",
   "device_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "device_name": "device_name",
   "public_key": "your_public_key",
@@ -41,10 +42,13 @@ config.json
 }
 ```
 
-> 其中， `username`, `public_key`, `private_key`, `server` 是必填
+> 其中， `username`, `public_key`, `private_key`, `server` 是必填  
+> 如果未提供 `password` ，默认会使用邮箱验证码登录，需要手动交互  
 > `device_name` 为设备名，默认为 `linux` ，会在 app 上展示， `device_id` 为 32 位，默认为 `md5sum(device_name)`
 
 运行脚本，登录，验证，就会生成 wg 的配置文件  
 然后复制到 `/etc/wireguard/` 下然后 `systemctl start wg-quic@corplink.service` 即可
 
-> 注：如果登录信息出错，请清空 `cookie.txt` 和 `config.json` 中的 `state` 字段然后重新登录
+> 注：
+> - 如果登录信息出错，请清空 `cookie.txt` 和 `config.json` 中的 `state` 字段然后重新登录
+> - 如果提示 server error ，可以尝试重新生成 wg 的 key ，然后重新连接

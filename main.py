@@ -85,7 +85,11 @@ class CorpLink:
 
     def generate_wg_conf_and_keep_alive(self) -> typing.Optional[WireguardConfig]:
         vpn_list = self._client.list_vpn()
+        if vpn_list is None:
+            self.state = STAT_NOT_LOGIN
+            return
         if len(vpn_list) == 0:
+            print("No available vpn")
             return
         print(f"Found vpn: {json.dumps(vpn_list, indent=2)}")
         vpn = None

@@ -186,10 +186,12 @@ class Client:
             return False
         return True
 
-    def list_vpn(self) -> list:
+    def list_vpn(self) -> typing.Optional[list]:
         resp = self._open(list_vpn_url, None)
         if not self._ok(resp):
-            print(f"Failed to login: {resp}")
+            print(f"Failed to list vpn: {resp}")
+            if resp["code"] == 101:
+                return None
             return []
         """
         {

@@ -1,4 +1,6 @@
 import os
+import signal
+import sys
 import time
 
 import pyotp
@@ -14,7 +16,6 @@ class CorpLink:
         self._conf_file = "corplink.conf"
         try:
             self._username = self._conf["username"]
-            self._password = self._conf["password"]
             self._public_key = self._conf["public_key"]
             self._private_key = self._conf["private_key"]
 
@@ -22,6 +23,9 @@ class CorpLink:
                 self._otp = pyotp.TOTP(self._conf["totp"])
 
             self._device_name = default_device_name
+            self._password = ""
+            if "password" in self._conf:
+                self._password = self._conf["password"]
             if "device_name" in self._conf:
                 self._device_name = self._conf["device_name"]
             self._device_id = utils.device_id_from_name(self._device_name)
@@ -96,7 +100,7 @@ class CorpLink:
 
         private_key = self._private_key
         public_key = self._public_key
-        info = self._client.fetch_peer_info(ip, port, public_key)
+        info = self._client.fetch_peer_info(ip, port, public_key, self._otp.now())
         if len(info) == 0:
             return
         if "2-fa" in info:
@@ -105,8 +109,9 @@ class CorpLink:
             return
 
         self.state = STAT_READY
+        wg_ip = info["ip"]
         conf = WireguardConfig(
-            ip=f'{info["ip"]}/{info["ip_mask"]}',
+            ip=f'{wg_ip}/{info["ip_mask"]}',
             private_key=private_key,
             public_key=public_key,
             peer_key=info["public_key"],
@@ -117,10 +122,18 @@ class CorpLink:
         print(conf)
         with open(self._conf_file, "w") as f:
             f.write(str(conf))
+
+        def signal_handler(sig, frame):
+            print('Disconnecting...')
+            self._client.disconnect_vpn(ip, port, wg_ip, public_key)
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
         while True:
             try:
                 print("keep connection alive")
-                self._client.report_vpn_status(ip, port, info["ip"], public_key)
+                self._client.report_vpn_status(ip, port, wg_ip, public_key)
                 time.sleep(60)
             except Exception as e:
                 raise e
@@ -134,8 +147,8 @@ if __name__ == '__main__':
         if not corp_link.login():
             exit(1)
 
-    if corp_link.need_verify():
-        if not corp_link.verify():
-            exit(1)
+    # if corp_link.need_verify():
+    #     if not corp_link.verify():
+    #         exit(1)
 
     corp_link.generate_wg_conf_and_keep_alive()

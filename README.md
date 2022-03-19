@@ -52,3 +52,36 @@ config.json
 > 注：
 > - 如果登录信息出错，请清空 `cookie.txt` 和 `config.json` 中的 `state` 字段然后重新登录
 > - 如果提示 server error ，可以尝试重新生成 wg 的 key ，然后重新连接
+
+## 流程图
+
+### Linux
+
+```mermaid
+graph TD;
+    A[Password Login];
+    B[Request Email Code];
+    C[Email Login];
+    D[Verify 2-FA];
+    E[List VPN];
+    F[Ping VPN];
+    G[Connect VPN];
+    A-->D;
+    B-->C-->D;
+    D-->E-->F-->G;
+```
+
+### Android
+
+```mermaid
+graph TD;
+    A[Password Login];
+    B[Request Email Code];
+    C[Email Login];
+    D[List VPN];
+    E[Ping VPN];
+    F[Connect VPN With 2-FA Code];
+    A-->D;
+    B-->C;
+    C-->D-->E-->F;
+```

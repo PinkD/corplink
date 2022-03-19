@@ -10,9 +10,23 @@ import pyotp
 
 from config import *
 
-user_agent = "CorpLink/20500 (Google Pixel; Android 10; en)"
+user_agent = "CorpLink/20500 (GooglePixel; Android 10; en)"
 
-url_postfix = "?os=Android&os_version=24&model=GooglePixel&app_version=2.0.5"
+url_params = {
+    "os": "Android",
+    "os_version": "2",
+    "app_version": "2.0.5",
+    "brand": "Google",
+    "model": "Pixel",
+    "language": "en",
+    "build_number": "2021051719",
+}
+
+_url_params = []
+for k, v in url_params.items():
+    _url_params.append(f"{k}={v}")
+
+url_postfix = "?" + "&".join(_url_params)
 
 get_login_method_url = f"https://%s/api/lookup{url_postfix}"
 send_code_url = f"https://%s/api/login/code/send{url_postfix}"
@@ -235,8 +249,8 @@ class Client:
         cookie = "; ".join(cookies)
         return cookie
 
-    def fetch_peer_info(self, ip, port, your_key) -> dict:
-        data = {"public_key": your_key}
+    def fetch_peer_info(self, ip, port, your_key, otp) -> dict:
+        data = {"public_key": your_key, "otp": otp}
         resp = self._open(conn_url % (ip, port), data)
         if not self._ok(resp):
             if resp["code"] == 3002:
@@ -257,4 +271,16 @@ class Client:
         resp = self._open(keep_alive_url % (ip, port), data)
         if not self._ok(resp):
             print(f"failed to report vpn status: {resp}")
+            return {}
+
+    def disconnect_vpn(self, ip, port, wg_ip, public_key):
+        data = {
+            "ip": wg_ip,
+            "mode": "Split",
+            "public_key": public_key,
+            "type": "101"
+        }
+        resp = self._open(keep_alive_url % (ip, port), data)
+        if not self._ok(resp):
+            print(f"failed to disconnect vpn: {resp}")
             return {}

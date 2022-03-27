@@ -2,6 +2,8 @@
 
 [飞连](https://www.volcengine.com/product/vecorplink) 配置生成器
 
+**该项目部分功能不够完善，应该不会再更新，请使用基于 Rust 重写的 [corplink-rs](https://github.com/PinkD/corplink-rs)**
+
 ## 原理
 
 飞连基于 [wg-go](https://github.com/WireGuard/wireguard-go) 魔改了配置方式
